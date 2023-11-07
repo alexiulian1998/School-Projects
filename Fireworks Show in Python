@@ -1,0 +1,126 @@
+import pygame, random
+
+# Initialize pygame
+pygame.init()
+
+# Set up constants for the window size
+WIDTH = 500
+HEIGHT = 800
+
+# Create a display surface
+screen = pygame.display.set_mode([WIDTH, HEIGHT])
+
+# Create a transparent surface for drawing fireworks
+surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+# Set the window title
+pygame.display.set_caption('Fireworks!')
+
+# Frames per second for the game loop
+fps = 60
+
+# Initialize a clock to control frame rate
+timer = pygame.time.Clock()
+
+# Lists to store fireworks and projectiles
+fireworks = []
+projectiles = []
+
+# Counter to keep track of time
+counter = 0
+
+# Flag to determine when to create new fireworks
+new_fireworks = True
+
+# List of colors for fireworks
+colors = [(255, 0, 0), (0, 0, 255), (255, 255, 255)]
+
+# Function to draw fireworks and projectiles
+def draw_fireworks(firework_list, projectile_list):
+    remove = []
+
+    # Possible directions for projectile launch
+    directions = [(1, 1), (1, 0), (0, 1), (-1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1)]
+
+    # Loop through fireworks
+    for i in range(len(firework_list)):
+        if firework_list[i][3] < counter and firework_list[i][2] < firework_list[i][1]:
+            # Draw the firework at its current position
+            pygame.draw.rect(screen, firework_list[i][4], [firework_list[i][0], firework_list[i][1], 10, 10], 0, 3)
+            firework_list[i][1] -= 7
+        elif firework_list[i][2] >= firework_list[i][1]:
+            x_start = firework_list[i][0]
+            y_start = firework_list[i][1]
+            # Create projectiles in different directions
+            for j in range(len(directions)):
+                projectile_list.append([x_start, y_start, directions[j][0] * 3, directions[j][1] * 3, firework_list[i][4], 60])
+            remove.append(i)
+
+    # Remove finished fireworks
+    remove.sort(reverse=True)
+    for r in remove:
+        firework_list.remove(firework_list[r])
+
+    remove = []
+
+    # Loop through projectiles
+    for i in range(len(projectile_list)):
+        # Set color with reduced alpha value
+        color = projectile_list[i][4][0], projectile_list[i][4][1], projectile_list[i][4][2], projectile_list[i][5] * 4
+        pygame.draw.circle(surface, color, (projectile_list[i][0], projectile_list[i][1]), 3)
+        projectile_list[i][5] -= 1
+        projectile_list[i][0] += projectile_list[i][2]
+        projectile_list[i][1] += projectile_list[i][3]
+        projectile_list[i][3] += 0.1
+
+        # Check if the projectile should be removed
+        if projectile_list[i][5] < 0 or WIDTH < projectile_list[i][0] < -3 or HEIGHT < projectile_list[i][0]:
+            remove.append(i)
+
+    # Remove finished projectiles
+    for p in range(len(remove)):
+        projectile_list.pop(0)
+
+    # Blit the transparent surface onto the main screen
+    screen.blit(surface, (0, 0))
+
+    return firework_list, projectile_list
+
+# Main game loop
+run = True
+while run:
+    # Control frame rate
+    timer.tick(fps)
+
+    # Fill the screen with a black background
+    screen.fill('black')
+
+    # Increment the time counter
+    counter += 1
+
+    # Create new fireworks when needed
+    if new_fireworks:
+        for q in range(30):
+            # Generate random fireworks with starting position, explosion height, and color
+            fireworks.append([random.randint(10, WIDTH - 10), HEIGHT, random.randint(10, HEIGHT / 2), random.randint(0, 300), random.choice(colors)])
+        new_fireworks = False
+
+    # Draw fireworks and projectiles
+    fireworks, projectiles = draw_fireworks(fireworks, projectiles)
+
+    # Check if all fireworks and projectiles have finished
+    if len(fireworks) == 0 and len(projectiles) == 0:
+        counter = 0
+        new_fireworks = True
+        # Reset the transparent surface if you want to keep the fireworks on screen
+
+    # Handle exit event
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+
+    # Update the display
+    pygame.display.flip()
+
+# Quit pygame when the loop ends
+pygame.quit()
